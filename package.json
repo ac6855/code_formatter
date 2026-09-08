@@ -1,7 +1,7 @@
 {
   "name": "code-formatter",
   "version": "1.0.0",
-  "description": "纯前端离线代码格式化器（跨平台桌面版）",
+  "description": "代码格式化器（前端 Monaco 编辑器 + 后端 Node 格式化引擎，Docker 部署）",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -14,6 +14,14 @@
   },
   "author": "",
   "license": "MIT",
+  "dependencies": {
+    "@astral-sh/ruff-wasm-nodejs": "^0.16.6",
+    "@wasm-fmt/shfmt": "^0.2.7",
+    "prettier": "^3.3.3",
+    "sql-formatter": "^15.3.2",
+    "terser": "^5.31.0",
+    "xml-formatter": "^3.0.0"
+  },
   "devDependencies": {
     "electron": "^31.0.0",
     "electron-builder": "^24.13.3"
@@ -28,7 +36,7 @@
       "app.js",
       "index.html",
       "style.css",
-      "vs/**/*",
+      "format-backend.mjs",
       "vendor/**/*"
     ],
     "directories": {

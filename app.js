@@ -1,27 +1,11 @@
-// 纯前端代码格式化器 —— 所有格式化在浏览器内完成，离线、无后端、无外部依赖
-// 引擎：Prettier(JS/TS/JSON/YAML/HTML/CSS/SCSS/LESS/MD) + sql-formatter(SQL) + terser(JS压缩)
-//      + clang-format-wasm(C/C++/C#/ObjC/Java/Proto/Verilog) + gofmt-wasm(Go) + PrettierExtra(PHP) + XMLFormatter(XML)
-// Monaco 用 inline 空 worker，兼容任意静态 httpd（含 busybox）
-
+// 代码格式化器（前端）—— 格式化计算交由后端 /api/format 完成，前端仅负责编辑与交互。
+// 这样浏览器只需加载 Monaco 编辑器，不再下发庞大的 wasm/JS 引擎，网速差时加载更快。
 self.MonacoEnvironment = {
   getWorker: function () {
     const blob = new Blob(['self.onmessage=function(){};'], { type: 'application/javascript' });
     return new Worker(URL.createObjectURL(blob));
   },
 };
-
-// file:// 或异常响应时 instantiateStreaming 可能失败 —— 兜底为 arrayBuffer 方式
-if (typeof WebAssembly !== 'undefined' && !WebAssembly.__patched) {
-  const orig = WebAssembly.instantiateStreaming;
-  WebAssembly.instantiateStreaming = async function (resp, imports) {
-    try { return await orig(resp, imports); }
-    catch (e) {
-      const buf = (resp && typeof resp.arrayBuffer === 'function') ? await resp.arrayBuffer() : resp;
-      return WebAssembly.instantiate(buf, imports);
-    }
-  };
-  WebAssembly.__patched = true;
-}
 
 const MONACO_LANG = {
   javascript: 'javascript', typescript: 'typescript', json: 'json', yaml: 'yaml',
@@ -30,120 +14,10 @@ const MONACO_LANG = {
   go: 'go', python: 'python', php: 'php', bash: 'shell', verilog: 'verilog',
 };
 
-// 三个 wasm 引擎 + PrettierExtra（PHP）+ XMLFormatter（XML）运行期填充
-const ENGINES = { clang: null, gofmt: null, ruff: null, extra: null, xml: null, ready: false };
-
-async function initEngines() {
-  try {
-    const [cf, gf, rf] = await Promise.all([
-      import('./vendor/wasm/clang-format-web.js'),
-      import('./vendor/wasm/gofmt_web.js'),
-      import('./vendor/wasm/ruff_wasm.js'),
-    ]);
-    // 各包的初始化函数为 default 导出
-    await Promise.all([cf.default(), gf.default(), rf.default()]);
-    ENGINES.clang = cf;            // .format(src, fileName, styleJson)
-    ENGINES.gofmt = gf.format;     // format(src)
-    ENGINES.ruff = rf;             // .run(...)
-    ENGINES.extra = window.PrettierExtra || null;   // { format, plugins }（PHP）
-    ENGINES.xml = window.xmlFormatter || window.XMLFormatter || null;  // 浏览器全局 xmlFormatter（本身即 format 函数，minify 为其属性）
-    ENGINES.ready = true;
-    setEngineStatus('引擎就绪 ✓', false);
-  } catch (e) {
-    console.error(e);
-    setEngineStatus('部分引擎加载失败：' + (e && e.message ? e.message : e), true);
-  }
-}
-
-// 缩进选项 → 实际缩进字符串（供 XML 等需要字符串缩进的引擎使用）
-function indentStr(o) {
-  return (o && o.useTabs) ? '\t' : ' '.repeat((o && o.tabWidth) || 2);
-}
-
-function minifyXml(c) {
-  return c.replace(/>\s*</g, '><').trim() + '\n';
-}
-
-// —— 语言能力声明（声明式：新增语言只需在此登记一项）——
-// engine: prettier | sql | xml | prettier-php | clang | gofmt | ruff
-const LANGS = {
-  javascript: { engine: 'prettier', parser: 'babel',      minify: 'terser' },
-  typescript: { engine: 'prettier', parser: 'typescript' },
-  json:       { engine: 'prettier', parser: 'json',       minify: 'json' },
-  yaml:       { engine: 'prettier', parser: 'yaml' },
-  html:       { engine: 'prettier', parser: 'html' },
-  css:        { engine: 'prettier', parser: 'css' },
-  scss:       { engine: 'prettier', parser: 'scss' },
-  less:       { engine: 'prettier', parser: 'less' },
-  markdown:   { engine: 'prettier', parser: 'markdown' },
-
-  sql:        { engine: 'sql',      minify: 'sql' },
-  xml:        { engine: 'xml',      minify: 'xml-collapse', needsEngine: 'xml' },
-  php:        { engine: 'prettier-php' },
-
-  java:       { engine: 'clang', file: 'A.java', preset: 'Google' },
-  c:          { engine: 'clang', file: 'a.c',    preset: 'LLVM' },
-  cpp:        { engine: 'clang', file: 'a.cpp',  preset: 'LLVM' },
-  csharp:     { engine: 'clang', file: 'a.cs',   preset: 'Microsoft' },
-  objc:       { engine: 'clang', file: 'a.m',    preset: 'WebKit' },
-  // clang-format 原生支持 proto / verilog（实测通过）
-  proto:      { engine: 'clang', file: 'a.proto', preset: 'Google' },
-  verilog:    { engine: 'clang', file: 'a.v',     preset: 'LLVM' },
-
-  go:         { engine: 'gofmt' },
-  python:     { engine: 'ruff', note: 'Python 纯前端格式化暂不可用（ruff-wasm 仅提供 check/lint，无 format 接口），请用后端模式' },
-
-  bash:       { unsupported: true },
+// 前端预判：这些语言后端暂未实现，直接拦截并提示，避免无谓请求
+const UNSUPPORTED = {
+  php: 'PHP 后端格式化暂未接入（需 @prettier/plugin-php），后续版本支持',
 };
-
-// 将能力声明编译为统一的 { format, minify?, needsEngine? } 接口
-function compileFormatter(spec) {
-  if (spec.unsupported) return { unsupported: true };
-
-  switch (spec.engine) {
-    case 'prettier': {
-      const out = { format: (c, o) => prettier.format(c, { parser: spec.parser, plugins: prettierPlugins, ...o }) };
-      if (spec.minify === 'terser') out.minify = async (c) => (await terser.minify(c)).code;
-      else if (spec.minify === 'json') out.minify = (c) => JSON.stringify(JSON.parse(c));
-      return out;
-    }
-    case 'sql': {
-      const out = { format: (c, o) => sqlFormatter.format(c, { language: 'sql', tabWidth: (o && o.tabWidth) || 2, keywordCase: 'upper' }) };
-      if (spec.minify === 'sql') out.minify = (c) => sqlFormatter.format(c, { language: 'sql', tabWidth: 0 }).replace(/\s+/g, ' ').trim() + '\n';
-      return out;
-    }
-    case 'xml': {
-      const out = { needsEngine: 'xml', format: (c, o) => ENGINES.xml(c, { indentation: indentStr(o), collapseContent: false, lineSeparator: '\n' }) };
-      if (spec.minify === 'xml-collapse') out.minify = minifyXml;
-      return out;
-    }
-    case 'prettier-php':
-      return { needsEngine: 'extra', format: (c, o) => ENGINES.extra.format(c, { parser: 'php', plugins: ENGINES.extra.plugins, ...o }) };
-    case 'clang':
-      return {
-        needsEngine: 'clang',
-        format: (c, o) => ENGINES.clang.format(c, spec.file, JSON.stringify({ BasedOnStyle: spec.preset, IndentWidth: (o && o.tabWidth) || 2, UseTab: !!(o && o.useTabs) })),
-      };
-    case 'gofmt':
-      return { needsEngine: 'gofmt', format: (c) => ENGINES.gofmt(c) };
-    case 'ruff':
-      return {
-        needsEngine: 'ruff',
-        format: async (c) => {
-          try {
-            const out = ENGINES.ruff.run(['format', '--stdin-filename', 'snippet.py', '-']);
-            if (typeof out === 'string' && out.trim()) return out;
-          } catch (_) { /* best-effort，失败走下方明确提示 */ }
-          throw new Error(spec.note);
-        },
-      };
-    default:
-      return { unsupported: true };
-  }
-}
-
-// 编译为实际格式化器表（取值语义与原 FORMATTERS 完全一致）
-const FORMATTERS = Object.fromEntries(Object.entries(LANGS).map(([k, v]) => [k, compileFormatter(v)]));
 
 const SAMPLES = {
   javascript: "const x={a:1,b:2};function   foo(bar){return bar&&true?1:0}",
@@ -168,7 +42,6 @@ const SAMPLES = {
   python: 'def foo( x,y ):\n    if x:\n        return x+y\n    else:\n        return y',
   php: '<?php function foo($a){return $a?1:0;} $x=array(1,2,3);',
   bash: 'if [ $x -gt 0 ]; then echo hi; fi',
-  verilog: 'module top(input clk,output reg q);always@(posedge clk)begin q<=~q;end endmodule',
 };
 
 let inputEditor, outputEditor;
@@ -208,70 +81,11 @@ function setLineInfo(text) {
   el.textContent = `${lines} 行 · ${chars} 字符`;
 }
 
-// 运行前的前置阻断检查：返回错误文案，或 null 表示可继续
-function checkBlockers(lang, fmt, action) {
-  if (!fmt) return '该语言暂不支持';
-  if (fmt.unsupported) return `${lang} 纯前端暂不支持，需后端模式`;
-  if (fmt.needsEngine && !ENGINES[fmt.needsEngine]) return 'wasm 引擎仍在加载，请稍候再试';
-  if (action === 'minify' && !fmt.minify) return `${lang} 暂仅支持格式化，不支持压缩`;
-  return null;
-}
-
-// —— 错误提示优化：清洗引擎原始消息、提取行/列、给出友好中文文案 ——
-let errorDecos = null;                 // 上一次的错误行高亮（运行时清除）
+// 错误行高亮相关
+let errorDecos = null;
 function clearErrorDecos() {
   if (errorDecos) { try { errorDecos.clear(); } catch (_) {} errorDecos = null; }
 }
-
-function describeError(e, lang) {
-  const raw = (e && e.message) ? e.message : String(e == null ? '' : e);
-  let line = null, col = null;
-
-  // 1) 结构化位置（prettier / terser 等可能直接挂在 error 对象上）
-  const obj = (e && typeof e === 'object') ? e : null;
-  if (obj) {
-    const loc = obj.loc && (obj.loc.start || obj.loc);
-    if (loc && typeof loc.line === 'number') { line = loc.line; col = (loc.column != null ? loc.column : null); }
-    else if (typeof obj.line === 'number') { line = obj.line; col = (obj.col != null ? obj.col : null); }
-  }
-  // 2) 从消息文本用正则提取位置（line:col / line X column Y / line X）
-  if (line == null) {
-    const m = raw.match(/(\d+):(\d+)/)
-            || raw.match(/line\s+(\d+)[^\d]*column\s+(\d+)/i)
-            || raw.match(/(\d+)\s*,\s*column\s+(\d+)/i)
-            || raw.match(/line\s+(\d+)/i);
-    if (m) { line = parseInt(m[1], 10); col = m[2] != null ? parseInt(m[2], 10) : null; }
-  }
-  if (line != null && line < 1) line = 1;
-
-  // 3) 清洗消息：去文件名/路径、去各类位置标注、去 ANSI 颜色码、只留首行、截断
-  let msg = raw
-    .replace(/^\[error\]\s*/i, '')
-    .replace(/\x1b\[[0-9;]*m/g, '')             // ANSI 颜色码
-    .replace(/\s*\(\d+:\d+\)/g, '')             // (1:10) / (3:4)
-    .replace(/\s*\(line\s+\d+[^()]*\)/gi, '')   // (line 2, column 5)
-    .replace(/\s*at line\s+\d+(?:,\s*column\s+\d+)?/gi, '') // at line 2, column 5
-    .replace(/\s*\([^()]*:\d+:\d+\)/g, '')       // 兜底 (file:line:col)
-    .replace(/(?:^|\s)[^\s]*:\d+:\d+:\s*/g, '')  // stdin:1:10: / X.js:3:4:
-    .replace(/\s+/g, ' ')
-    .split('\n')[0]
-    .trim();
-  if (!msg) msg = '请检查输入代码的语法';
-  if (msg.length > 140) msg = msg.slice(0, 140) + '…';
-
-  // 4) 按错误类别给出中文前缀（比一律“错误：”更可读）
-  let prefix = '格式化失败';
-  if (/unexpected|expected|missing|mismatch|parse\s*error|syntax/i.test(raw)) prefix = '语法错误';
-  else if (/eof|end of (input|file)|unterminated|unexpected end/i.test(raw)) prefix = '语法不完整';
-  else if (/indent|width|tab|option|invalid/i.test(raw)) prefix = '配置无效';
-
-  const locText = line != null
-    ? `（第 ${line} 行${col != null ? ' · 第 ' + col + ' 列' : ''}）`
-    : '';
-  return { text: `${prefix}${locText}：${msg}`, line, col };
-}
-
-// 在输入区高亮错误行（旧版 Monaco 无 createDecorationsCollection 时降级为仅定位光标）
 function markErrorLine(line) {
   clearErrorDecos();
   if (!inputEditor || !inputEditor.createDecorationsCollection) return;
@@ -281,36 +95,48 @@ function markErrorLine(line) {
   }]);
 }
 
+// 调用后端格式化引擎
 async function run(action) {
   const lang = document.getElementById('lang').value;
-  const fmt = FORMATTERS[lang];
-
-  const block = checkBlockers(lang, fmt, action);
-  if (block) { setStatus(block, true); return; }
+  if (UNSUPPORTED[lang]) { setStatus(UNSUPPORTED[lang], true); return; }
 
   const code = inputEditor.getValue();
   if (!code.trim()) { setStatus('请输入代码', true); return; }
 
-  clearErrorDecos();   // 清掉上一次的错误行高亮
+  clearErrorDecos();
+  setStatus('正在格式化…');
   try {
     const opts = indentOpts();
-    const result = action === 'minify'
-      ? await fmt.minify(code, opts)
-      : await fmt.format(code, opts);
-    outputEditor.setValue(result);
-    setLineInfo(result);
+    const resp = await fetch('/api/format', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lang, code, action, tabWidth: opts.tabWidth, useTabs: opts.useTabs }),
+    });
+    const text = await resp.text();
+    let data;
+    try { data = JSON.parse(text); }
+    catch {
+      throw new Error('后端返回内容为空或非 JSON（请确认服务端已更新为后端版本、且容器内已安装依赖 node_modules）');
+    }
+    if (!resp.ok) throw new Error('后端返回 HTTP ' + resp.status + (data && data.error ? '：' + data.error : ''));
+    if (!data || typeof data !== 'object') throw new Error('后端返回格式异常');
+
+    if (!data.ok) {
+      setStatus(data.error || ('格式化失败：' + resp.status), true);
+      if (data.line != null) {
+        inputEditor.revealLineInCenter(data.line);
+        inputEditor.setPosition({ lineNumber: data.line, column: 1 });
+        markErrorLine(data.line);
+        inputEditor.focus();
+      }
+      return;
+    }
+
+    outputEditor.setValue(data.result);
+    setLineInfo(data.result);
     setStatus(action === 'minify' ? '压缩完成' : '格式化完成');
   } catch (e) {
-    const d = describeError(e, lang);
-    setStatus(d.text, true);
-    if (d.line != null) {
-      inputEditor.revealLineInCenter(d.line);
-      inputEditor.setPosition({ lineNumber: d.line, column: 1 });
-      markErrorLine(d.line);
-      inputEditor.focus();
-    }
-    // 原始堆栈/消息保留在控制台，便于排查
-    console.error('[format error]', e && e.stack ? e.stack : e);
+    setStatus('请求后端失败：' + (e && e.message ? e.message : e), true);
   }
 }
 
@@ -417,6 +243,28 @@ require(['vs/editor/editor.main'], () => {
     if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's'){ e.preventDefault(); downloadResult(); }
   });
 
-  // 启动 wasm 引擎加载（与编辑器并行）
-  initEngines();
+  // 真实探测后端健康状态，而非写死“已连接”
+  checkBackendHealth();
 });
+
+// 启动即探测一次 /api/health：页面能开只代表静态资源可达，
+// 不代表后端进程/引擎真的就绪，所以要用一次真实请求来定状态。
+async function checkBackendHealth() {
+  try {
+    const r = await fetch('/api/health');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    if (d.ok && d.backendReady) {
+      const e = d.engines || {};
+      const miss = [];
+      if (!e.clang) miss.push('clang-format');
+      if (!e.gofmt) miss.push('gofmt');
+      if (miss.length) setEngineStatus('后端已连接 · 引擎缺失(' + miss.join('/') + ')', true);
+      else setEngineStatus('后端已连接 ✓', false);
+    } else {
+      setEngineStatus('后端已就绪 · 引擎未加载', true);
+    }
+  } catch {
+    setEngineStatus('后端未连接 ✗', true);
+  }
+}

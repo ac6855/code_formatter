@@ -11,7 +11,7 @@
     <div class="brand" data-page-node-id="vcACGeWosZgesza1dv4acD">
       <h1 data-page-node-id="mwCE7YtYx8qQKIUQLppiY3">代码格式化器</h1>
     </div>
-    <span id="engineStatus" class="status-pill" data-page-node-id="zFlwOGQELSstci3tAUfcCs">引擎加载中…</span>
+    <span id="engineStatus" class="status-pill" data-page-node-id="zFlwOGQELSstci3tAUfcCs">后端模式</span>
     <button id="themeBtn" class="ghost" title="切换亮/暗主题" data-page-node-id="LYz3uVGcr7ptCrM026CLIX">🌓 暗色</button>
   </header>
 
@@ -23,31 +23,39 @@
         <span class="ctl-group" data-page-node-id="zD71pnnWgXZqHWzJXnvuRf">
           <label data-page-node-id="meIhRjMTNfHucM9WEfi6qy">语言
             <select id="lang" data-page-node-id="GHGvy5o1gsHUpRxD1DYyf7">
-              <optgroup label="支持格式化" data-page-node-id="YitAfBNdNHC8XacgZ2VMhl">
+              <optgroup label="前端 / Web" data-page-node-id="YitAfBNdNHC8XacgZ2VMhl">
                 <option value="javascript" selected data-page-node-id="uuFN5k4m6YFwulo6CAGL9F">JavaScript</option>
                 <option value="typescript" data-page-node-id="FU41asA92hWEbbW1IttZVT">TypeScript</option>
-                <option value="json" data-page-node-id="EZ9MQXGC9Rz577NwLGw8qT">JSON</option>
-                <option value="yaml" data-page-node-id="rwGVqYstFUq5OHs8XGYh1t">YAML</option>
                 <option value="html" data-page-node-id="GHfC2veTMU8r5WMuzA1i2z">HTML</option>
                 <option value="css" data-page-node-id="dCNMwJiLJVxhR8N0SkgE8B">CSS</option>
                 <option value="scss" data-page-node-id="vqOB6VIAqEfExo0ML0sHdT">SCSS</option>
                 <option value="less" data-page-node-id="pQwEzPj8eEPW2GME3vy5K3">LESS</option>
+                <option value="json" data-page-node-id="EZ9MQXGC9Rz577NwLGw8qT">JSON</option>
+                <option value="yaml" data-page-node-id="rwGVqYstFUq5OHs8XGYh1t">YAML</option>
                 <option value="markdown" data-page-node-id="4rJceatvyzsPIkhgiuhaeG">Markdown</option>
-                <option value="sql" data-page-node-id="rDFjUAFRMHW4ggd13qfTWp">SQL</option>
+              </optgroup>
+              <optgroup label="数据 / 查询" data-page-node-id="rDFjUAFRMHW4ggd13qfTWp">
+                <option value="sql" data-page-node-id="rDFjUAFRMHW4ggd13qfTWp2">SQL</option>
                 <option value="xml" data-page-node-id="hOxRM8pDFHn3KkTa8K1xAd">XML</option>
-                <option value="java" data-page-node-id="Rfi211mHCV0ReebvhONFsK">Java</option>
+              </optgroup>
+              <optgroup label="系统 / 编译型" data-page-node-id="Rfi211mHCV0ReebvhONFsK">
                 <option value="c" data-page-node-id="jDuecOJL669AGZhvDJqE5V">C</option>
                 <option value="cpp" data-page-node-id="uqIWziEXYqihrMWz5kAmGu">C++</option>
                 <option value="csharp" data-page-node-id="hDM3HvAjV32owWlGutVaSK">C#</option>
+                <option value="java" data-page-node-id="Rfi211mHCV0ReebvhONFsK2">Java</option>
                 <option value="objc" data-page-node-id="VCIoWEKJia6bOcG5tuQhPL">Objective-C</option>
                 <option value="go" data-page-node-id="ygHlzgWGD7x0toyDJLzbtC">Go</option>
-                <option value="php" data-page-node-id="s2w97HZnKKuAvtkeWk21Xe">PHP</option>
-                <option value="proto" data-page-node-id="mM22yJ7xv6NmOizggDK74K">Protocol Buffers</option>
-                <option value="verilog" data-page-node-id="F5wRDPeWq7pb0hCSMaRc29">Verilog</option>
               </optgroup>
-              <optgroup label="暂未实现" data-page-node-id="YEKHn8JSg80abLgVkH5Jnd">
-                <option value="python" data-page-node-id="L2bwYjJE86x2soUTBcHada">Python</option>
+              <optgroup label="脚本语言" data-page-node-id="L2bwYjJE86x2soUTBcHada">
+                <option value="python" data-page-node-id="L2bwYjJE86x2soUTBcHada2">Python</option>
                 <option value="bash" data-page-node-id="e3mV3CWyNW7wVvckmCEX46">Bash / Shell</option>
+                <option value="php" data-page-node-id="s2w97HZnKKuAvtkeWk21Xe">PHP</option>
+              </optgroup>
+              <optgroup label="协议定义 (IDL)" data-page-node-id="mM22yJ7xv6NmOizggDK74K">
+                <option value="proto" data-page-node-id="mM22yJ7xv6NmOizggDK74K2">Protocol Buffers</option>
+              </optgroup>
+              <optgroup label="硬件描述 (HDL)" data-page-node-id="F5wRDPeWq7pb0hCSMaRc29">
+                <option value="verilog" data-page-node-id="F5wRDPeWq7pb0hCSMaRc29b">Verilog</option>
               </optgroup>
             </select>
           </label>
@@ -93,30 +101,13 @@
   </main>
 
   <footer data-page-node-id="gRSvohbESyG8SegrSpZCHb">
-    所有操作均在浏览器本地完成，代码不会上传 ·
+    格式化在容器内 Node 引擎完成，代码不上公网 ·
     <kbd data-page-node-id="P28EQMPu1rIm480Sw2JhdB">Ctrl</kbd>/<kbd data-page-node-id="VC1AVXj4lZwr6eEeoTcNky">⌘</kbd>+<kbd data-page-node-id="k4FxN31ycJGiXEIzlktArO">Enter</kbd> 格式化 ·
     <kbd data-page-node-id="KYExmJF3rica4vj2k4bNPH">Ctrl</kbd>/<kbd data-page-node-id="7NVZHAq6o9hKzbSWDDpHId">⌘</kbd>+<kbd data-page-node-id="LQhN6K3elcDD4F57Bl8FHF">S</kbd> 下载 ·
     输出区可直接编辑后再复制
   </footer>
 
-  <!-- 本地化的纯 JS 引擎（离线，无 CDN） -->
-  <script src="./vendor/prettier/standalone.js"></script>
-  <script src="./vendor/prettier/parser-babel.js"></script>
-  <script src="./vendor/prettier/parser-typescript.js"></script>
-  <script src="./vendor/prettier/parser-estree.js"></script>
-  <script src="./vendor/prettier/parser-html.js"></script>
-  <script src="./vendor/prettier/parser-postcss.js"></script>
-  <script src="./vendor/prettier/parser-yaml.js"></script>
-  <script src="./vendor/prettier/parser-markdown.js"></script>
-  <script src="./vendor/sql-formatter.min.js"></script>
-  <script src="./vendor/terser.min.js"></script>
-  <!-- 纯 JS XML 格式化（浏览器全局 window.xmlFormatter） -->
-  <script src="./vendor/xml-formatter.js"></script>
-  <!-- 浏览器内为 @prettier/plugin-php 提供 process 桩 -->
-  <script>window.process = window.process || { cwd: function(){return '/';}, platform: 'browser', env: {} };</script>
-  <!-- Prettier 独立实例（含 PHP 插件，浏览器全局 PrettierExtra） -->
-  <script src="./vendor/prettier-extra.js"></script>
-  <!-- 本地托管的 Monaco 编辑器 -->
+  <!-- 本地托管的 Monaco 编辑器（仅编辑器在前端，格式化走后端 /api/format） -->
   <script src="./vs/loader.js"></script>
   <script src="./app.js"></script>
 </body>

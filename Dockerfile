@@ -1,5 +1,6 @@
-# 纯前端代码格式化器 —— 网页服务镜像
-# 本质：静态文件 + 纯 Node 静态服务器（server.js 零三方依赖，无需 npm install）
+# 代码格式化器 —— 网页服务镜像（前端 Monaco 编辑器 + 后端 Node 格式化引擎）
+# 前端只下发编辑器，格式化计算在容器内 Node 进程完成（经 /api/format），
+# 因此浏览器不再需要下载庞大的前端 wasm 引擎，加载更快。
 # 用法：
 #   docker build -t code-formatter .
 #   docker run -d --name code-formatter -p 4317:4317 code-formatter
@@ -9,10 +10,12 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# 仅复制静态资源与 Node 服务器；项目无构建步骤、无第三方依赖
-COPY app.js index.html style.css server.js ./
-COPY vs ./vs
-COPY vendor ./vendor
+# 先装后端引擎依赖（利用层缓存：依赖不变时无需重装）
+COPY package.json ./
+RUN npm install --omit=dev --no-audit --no-fund
+
+# 复制应用代码（含前端静态资源与 vendor/wasm 引擎文件）
+COPY . .
 
 EXPOSE 4317
 
