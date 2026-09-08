@@ -1,0 +1,49 @@
+{
+  "name": "code-formatter",
+  "version": "1.0.0",
+  "description": "纯前端离线代码格式化器（跨平台桌面版）",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "server": "node server.js",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder",
+    "dist:mac": "electron-builder --mac",
+    "dist:win": "electron-builder --win",
+    "dist:linux": "electron-builder --linux"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.example.codeformatter",
+    "productName": "代码格式化器",
+    "copyright": "Copyright © 2026",
+    "files": [
+      "main.js",
+      "server.js",
+      "app.js",
+      "index.html",
+      "style.css",
+      "vs/**/*",
+      "vendor/**/*"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "mac": {
+      "target": ["dmg", "zip"],
+      "category": "public.app-category.developer-tools"
+    },
+    "win": {
+      "target": ["nsis", "portable"]
+    },
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "category": "Development"
+    }
+  }
+}

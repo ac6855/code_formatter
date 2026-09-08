@@ -1,0 +1,16 @@
+# 标准 docker-compose（飞牛 FnOS / 裸 docker compose 通用）
+# 镜像来源：GitHub Actions 自动构建并推送到 GHCR，无需本地 build
+#   镜像地址：ghcr.io/<github用户名小写>/code-formatter:latest
+#   （把 <github用户名小写> 换成你 GitHub 账号的小写用户名，例如 zhaoxiwen）
+# 部署：在 docker-compose.yml 所在目录执行 `docker compose up -d`
+#   compose 会自动从 GHCR 拉取；更新后 `docker compose pull && docker compose up -d`
+services:
+  code-formatter:
+    image: ghcr.io/<github用户名小写>/code-formatter:latest
+    container_name: code-formatter
+    pull_policy: always
+    ports:
+      - "4317:4317"
+    environment:
+      - PORT=4317
+    restart: unless-stopped

@@ -1,0 +1,30 @@
+# QNAP watchcow 面板版（沿用 metube 完整模板：labels + env + networks）
+# 注意：
+#   1. watchcow.icon 指向 NAS 上的图标文件，请先按此路径放好图标：
+#      /vol2/1000/Data/icons/code-formatter.png
+#      （无图可先用 Simple Icons 的 code 图标，或临时改成别的已存在路径）
+#   2. trim-default 为外部 bridge 网络，watchcow 已创建；如不存在请先建。
+#   3. 本服务纯静态、无状态，不挂数据卷。
+services:
+  code-formatter:
+    image: ghcr.io/<github用户名小写>/code-formatter:latest
+    container_name: code-formatter
+    labels:
+      watchcow.enable: "true"
+      watchcow.display_name: "代码格式化器"
+      watchcow.desc: "纯前端离线代码格式化（Monaco + Prettier / clang-format-wasm 等，浏览器内完成）"
+      watchcow.service_port: "4317"
+      watchcow.protocol: "http"
+      watchcow.path: "/"
+      watchcow.icon: "file:///vol2/1000/Data/icons/code-formatter.png"
+    ports:
+      - "4317:4317"
+    environment:
+      - PORT=4317
+    networks:
+      - trim-default
+    restart: unless-stopped
+
+networks:
+  trim-default:
+    external: true

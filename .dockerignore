@@ -1,0 +1,9 @@
+# 无需打包进镜像的内容
+node_modules
+dist
+.git
+*.md
+Dockerfile
+.dockerignore
+docker-compose*.yml
+.workbuddy
