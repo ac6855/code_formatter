@@ -2,7 +2,7 @@
 # 触发：push 到 main 分支 / 打 v* tag / 手动 workflow_dispatch
 # 凭据：使用 Actions 自带的 GITHUB_TOKEN，无需任何额外配置
 # 架构：同时构建 linux/amd64（NAS 用）与 linux/arm64（Mac/树莓派等）
-# 镜像地址：ghcr.io/<你的 GitHub 用户名(小写)>/code-formatter:latest
+# 镜像地址：ghcr.io/ac6855/code-formatter:latest
 #
 # 首次推送后务必把 Package 设为公开，否则 NAS 拉取需登录：
 #   GitHub → 右上角头像 → Your organizations/Your repositories
