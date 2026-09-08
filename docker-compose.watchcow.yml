@@ -7,7 +7,7 @@
 #   3. 本服务纯静态、无状态，不挂数据卷。
 services:
   code-formatter:
-    image: ghcr.io/<github用户名小写>/code-formatter:latest
+    image: ghcr.io/ac6855/code-formatter:latest
     container_name: code-formatter
     labels:
       watchcow.enable: "true"
