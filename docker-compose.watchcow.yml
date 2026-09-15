@@ -1,30 +1,65 @@
-# QNAP watchcow 面板版（沿用 metube 完整模板：labels + env + networks）
-# 注意：
-#   1. watchcow.icon 指向 NAS 上的图标文件，请先按此路径放好图标：
-#      /vol2/1000/Data/icons/code-formatter.png
-#      （无图可先用 Simple Icons 的 code 图标，或临时改成别的已存在路径）
-#   2. trim-default 为外部 bridge 网络，watchcow 已创建；如不存在请先建。
-#   3. 本服务纯静态、无状态，不挂数据卷。
+# 飞牛 FnOS + WatchCow 版
+#
+# WatchCow（github.com/tf4fun/watchcow）是飞牛 FnOS 的 Docker 应用化工具：
+# 它监听 Docker 事件，把带 watchcow.enable=true 的容器注册成 FnOS 原生桌面应用，
+# 于是不必记端口、不必进容器列表找，直接从桌面点开。
+# 用法：在应用中心「本地安装」watchcow.fpk，再在 Docker 里新建项目粘贴本文件。
+#
+# ⚠️ 标签名对版本敏感：WatchCow v0.2 做过一次重命名，按 v0.1 的写法配会不生效。
+#    旧（v0.1）              → 新（v0.2+，本文件用这套）
+#    watchcow.title          → watchcow.display_name
+#    watchcow.description    → watchcow.desc
+#    watchcow.port           → watchcow.service_port
+#    watchcow.appName        → watchcow.appname
+#
+# 本服务无状态、不挂数据卷、不需要任何特权。
 services:
   code-formatter:
     image: ghcr.io/ac6855/code-formatter:latest
     container_name: code-formatter
-    labels:
-      watchcow.enable: "true"
-      watchcow.display_name: "代码格式化器"
-      watchcow.desc: "代码格式化器（Monaco 编辑器 + 容器内 Node 引擎，支持 Prettier / clang-format / gofmt / ruff / shfmt）"
-      watchcow.service_port: "4317"
-      watchcow.protocol: "http"
-      watchcow.path: "/"
-      watchcow.icon: "file:///vol2/1000/Data/icons/code-formatter.png"
     ports:
       - "4317:4317"
     environment:
       - PORT=4317
-    networks:
-      - trim-default
     restart: unless-stopped
+    labels:
+      # ——— 应用级 ———
+      watchcow.enable: "true"
+      # 应用唯一标识：3–32 字符，需以字母或数字开头，仅允许 ASCII 字母、数字与 . _ -
+      # 不写则默认取 watchcow.<容器名>
+      watchcow.appname: "code-formatter"
+      watchcow.display_name: "代码格式化器"
+      watchcow.desc: "Monaco 编辑器 + 容器内 Node 引擎（Prettier / clang-format / gofmt / ruff / shfmt）"
 
-networks:
-  trim-default:
-    external: true
+      # ——— 入口级 ———
+      watchcow.service_port: "4317"
+      watchcow.protocol: "http"
+      watchcow.path: "/"
+
+      # 图标：不指定时 WatchCow 会按镜像名去 dashboard-icons 查，
+      # 而那里没有 code-formatter 这个条目（已实测返回 404），
+      # 所以必须显式指定，否则桌面图标会退化成通用 Docker 图标。
+      # 下面这个是已确认存在的通用「代码」图标：
+      watchcow.icon: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/code.png"
+      # 想换成自己的图标（支持 PNG/JPEG/WebP/BMP/ICO，按文件内容识别格式，不看扩展名）：
+      #   watchcow.icon: "file:///vol2/1000/Data/icons/code-formatter.png"
+      # 相对路径也可，基准是 compose 文件所在目录：
+      #   watchcow.icon: "file://./icons/code-formatter.png"
+
+      # 打开方式：url = 浏览器新标签页（默认）；iframe = 像原生应用一样内嵌桌面窗口
+      # watchcow.ui_type: "iframe"
+      # 访问权限：true = 所有用户可见（默认），false = 仅管理员
+      # watchcow.all_users: "false"
+
+    # 关于网络：WatchCow 官方示例（memos / nginx）都不声明自定义网络——
+    # 应用注册只依赖标签，与容器挂在哪个网络无关；本服务是单容器、无内部通信需求，
+    # 走默认 bridge 即可。
+    # 原文件此处引用了外部网络 trim-default（原注释自述「沿用 metube 完整模板」），
+    # 一旦该网络在目标机器上不存在，`docker compose up` 会直接失败，
+    # 因此默认注释掉。若你的飞牛上确实有该网络且需要共用，取消下面注释即可。
+    # networks:
+    #   - trim-default
+
+# networks:
+#   trim-default:
+#     external: true

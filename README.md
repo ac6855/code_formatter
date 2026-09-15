@@ -66,11 +66,20 @@ docker run -d --name code-formatter -e PORT=8080 -p 8080:8080 ghcr.io/ac6855/cod
 
 镜像内置 `HEALTHCHECK`，以 `/api/health` 的 `backendReady` 为准——只探端口通会漏掉「依赖缺失导致引擎没加载上」的情况。
 
-### QNAP（watchcow）
+### 飞牛 FnOS 桌面化（WatchCow）
 
-使用 `docker-compose.watchcow.yml`，按要求放置图标 `/vol2/1000/Data/icons/code-formatter.png` 后在 watchcow 导入即可。
+在飞牛上除了直接访问 `http://<NASIP>:4317`，还可以用 [WatchCow](https://github.com/tf4fun/watchcow) 把容器注册成 FnOS 原生桌面应用——不用记端口、不必进容器列表翻找。注意 WatchCow 是**飞牛 FnOS 专用**工具，不是通用面板，群晖 / QNAP 上用不了。
 
-注意该 compose 用到外部网络 `trim-default`，若 NAS 上不存在需先创建。
+1. 从它的 [Releases](https://github.com/tf4fun/watchcow/releases) 下载 `watchcow.fpk`，在飞牛应用中心用「本地安装」装上；
+2. 在 Docker 里新建项目，粘贴 `docker-compose.watchcow.yml`，启动后自动出现在桌面。
+
+那个 compose 里有三处值得说明，都是核对过的：
+
+- **标签名分版本**。WatchCow v0.2 做过一次重命名，网上的教程两种写法都还在流传：v0.1 的 `watchcow.title` / `watchcow.description` / `watchcow.port` / `watchcow.appName` 已失效，新名是 `watchcow.display_name` / `watchcow.desc` / `watchcow.service_port` / `watchcow.appname`。本项目用的是 v0.2+ 的名字。
+- **图标必须显式指定**。不写 `watchcow.icon` 时，WatchCow 会拿镜像名去 dashboard-icons 查，而那里没有 `code-formatter` 这个条目（实测 404），桌面图标会退化成通用 Docker 图标。compose 里已指向一个确认存在的通用代码图标；要换成自己的图，`file://` 绝对路径和 `file://./相对路径`（相对 compose 所在目录）都支持，PNG/JPEG/WebP/BMP/ICO 均可，按文件内容识别格式、不看扩展名。
+- **`trim-default` 外部网络已注释掉**。原文件引用了它（原注释自述是「沿用 metube 完整模板」），而该网络一旦在目标机器上不存在，`docker compose up` 会直接失败。WatchCow 官方示例（memos / nginx）都不声明自定义网络——应用注册只依赖标签、与容器挂在哪个网络无关，本服务又是单容器无内部通信，走默认 bridge 即可；确有共用需要再取消注释。
+
+> 若创建项目时报 `pull_policy` 相关语法错，说明该飞牛的 compose 版本较老，删掉 `docker-compose.yml` 里那一行即可。
 
 ## 本地开发
 
