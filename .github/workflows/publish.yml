@@ -32,6 +32,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # 先跑测试再构建镜像：测试不过就不要推新镜像，
+      # 免得把坏版本直接推到 NAS 上（compose 里设的是 pull_policy: always）
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: 安装依赖
+        run: npm ci --no-audit --no-fund
+
+      - name: 运行冒烟测试
+        run: npm test
+
       - name: Set up QEMU（多架构模拟）
         uses: docker/setup-qemu-action@v3
 
@@ -55,7 +69,7 @@ jobs:
             type=sha,prefix=sha-,format=short
           labels: |
             org.opencontainers.image.title=code-formatter
-            org.opencontainers.image.description=纯前端离线代码格式化器（Monaco + Prettier/clang-format-wasm）
+            org.opencontainers.image.description=代码格式化器（Monaco 编辑器 + Node 格式化引擎）
 
       - name: Build and push
         uses: docker/build-push-action@v6

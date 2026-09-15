@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>代码格式化器</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <header>
+      <div class="brand">
+        <h1>代码格式化器</h1>
+      </div>
+      <span id="engineStatus" class="status-pill">后端模式</span>
+      <button id="themeBtn" class="ghost" title="切换亮/暗主题">🌓 暗色</button>
+    </header>
+
+    <main>
+      <section class="pane">
+        <div class="toolbar">
+          <span class="pane-title">输入</span>
+
+          <span class="ctl-group">
+            <label>
+              <span>语言</span>
+              <!-- 选项由 shared/languages.mjs 注册表生成，见 public/js/main.mjs -->
+              <select id="lang"></select>
+            </label>
+            <label>
+              <span>缩进</span>
+              <select id="indent">
+                <option value="2" selected>2 空格</option>
+                <option value="4">4 空格</option>
+                <option value="0">Tab</option>
+              </select>
+            </label>
+            <label>
+              <span>换行</span>
+              <select id="wrap">
+                <option value="off">不换行</option>
+                <option value="on" selected>自动换行</option>
+                <option value="bounded">按视口(120)</option>
+              </select>
+            </label>
+          </span>
+
+          <span class="spacer"></span>
+          <button id="pasteBtn" class="ghost">粘贴</button>
+          <span class="ctl-group">
+            <button id="formatBtn" class="primary">格式化</button>
+            <button id="minifyBtn">压缩</button>
+            <button id="sampleBtn">示例</button>
+          </span>
+          <button id="clearBtn" class="ghost">清空</button>
+        </div>
+        <div id="editor" class="editor"></div>
+      </section>
+
+      <section class="pane">
+        <div class="toolbar">
+          <span class="pane-title">输出</span>
+          <span id="status" class="status"></span>
+          <span class="spacer"></span>
+          <span id="lineInfo" class="line-info"></span>
+          <button id="copyBtn" class="ghost">复制结果</button>
+          <button id="downloadBtn" class="ghost">下载</button>
+        </div>
+        <div id="output" class="editor"></div>
+      </section>
+    </main>
+
+    <footer>
+      格式化在容器内 Node 引擎完成，代码不上公网 ·
+      <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>Enter</kbd> 格式化 · <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>S</kbd> 下载 ·
+      输出区可直接编辑后再复制
+    </footer>
+
+    <!-- Monaco 的 AMD 加载器必须先在经典脚本里就位，之后 public/js/main.mjs 才能通过它加载编辑器 -->
+    <script src="./vs/loader.js"></script>
+    <script type="module" src="./js/main.mjs"></script>
+  </body>
+</html>

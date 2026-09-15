@@ -1,9 +1,20 @@
-# 无需打包进镜像的内容
+# 无需放进构建上下文的内容。
+# Dockerfile 里用的是显式 COPY 清单，但缩小构建上下文仍能显著加快构建与推送。
 node_modules
 dist
+
+# 版本控制与 CI
 .git
+.github
+
+# 开发期的东西，镜像里不需要
+test
 *.md
+.editorconfig
+.prettierrc.json
+.prettierignore
+
+# 构建相关的文件自身
 Dockerfile
 .dockerignore
 docker-compose*.yml
-.workbuddy

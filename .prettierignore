@@ -1,0 +1,6 @@
+node_modules
+package-lock.json
+
+# 第三方资源，不参与本项目的代码风格检查
+public/vs
+vendor/wasm

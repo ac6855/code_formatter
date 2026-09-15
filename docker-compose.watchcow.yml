@@ -12,7 +12,7 @@ services:
     labels:
       watchcow.enable: "true"
       watchcow.display_name: "代码格式化器"
-      watchcow.desc: "纯前端离线代码格式化（Monaco + Prettier / clang-format-wasm 等，浏览器内完成）"
+      watchcow.desc: "代码格式化器（Monaco 编辑器 + 容器内 Node 引擎，支持 Prettier / clang-format / gofmt / ruff / shfmt）"
       watchcow.service_port: "4317"
       watchcow.protocol: "http"
       watchcow.path: "/"

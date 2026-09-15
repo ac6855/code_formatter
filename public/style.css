@@ -1,0 +1,318 @@
+/*
+ * 主题通过 CSS 自定义属性实现。
+ *
+ * 重构前亮/暗两套外观靠 20 多条 `html[data-theme="dark"] .xxx` 逐条覆盖，
+ * 每条都要与上面的浅色规则一一对应，改一处颜色要改两个地方、极易漏改。
+ * 现在所有颜色都收敛成 :root 里的一组令牌，深色主题只覆盖令牌本身。
+ *
+ * 同时删掉了 .seg / .seg-on / .badge 相关样式——HTML 里早已没有对应元素，
+ * 是「模式分段控件」方案被放弃后留下的死代码。
+ */
+
+:root {
+  --bg: #eef0f4;
+  --text: #1f2329;
+
+  --header-bg: linear-gradient(180deg, #ffffff, #fbfcfd);
+  --header-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  --brand-text: #1f2329;
+
+  --surface: #ffffff;
+  --surface-raised: #fafbfc;
+  --surface-sunken: #f1f3f5;
+
+  --border: #e3e5e8;
+  --border-soft: #eef0f2;
+  --border-control: #d0d3d9;
+
+  --text-muted: #6b7280;
+  --text-dim: #8a9099;
+  --text-faint: #9aa1ab;
+  --text-control: #4b5563;
+
+  --accent: #2c7be5;
+  --accent-hover: #1f6fd0;
+  --accent-soft: #e8f1fe;
+
+  --danger: #d93025;
+  --danger-soft: #fde8e6;
+  --error-line: rgba(217, 48, 37, 0.1);
+
+  --shadow-pane: 0 1px 2px rgba(0, 0, 0, 0.03);
+  --kbd-bg: #ffffff;
+
+  /* 按钮 hover 用 filter 提亮/压暗，两种主题下的方向相反 */
+  --control-hover: brightness(0.97);
+  --control-active: brightness(0.93);
+}
+
+html[data-theme='dark'] {
+  --bg: #1e1e1e;
+  --text: #d4d4d4;
+
+  --header-bg: linear-gradient(180deg, #252526, #1e1e1e);
+  --header-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --brand-text: #e8e8e8;
+
+  --surface: #1e1e1e;
+  --surface-raised: #252526;
+  --surface-sunken: #2a2a2a;
+
+  --border: #333333;
+  --border-soft: #333333;
+  --border-control: #444444;
+
+  --text-muted: #9aa1ab;
+  --text-dim: #888888;
+  --text-faint: #777777;
+  --text-control: #bbbbbb;
+
+  --accent: #2c7be5;
+  --accent-hover: #2c7be5;
+  --accent-soft: #0b2a4a;
+
+  --danger: #ff8a80;
+  --danger-soft: #3a1c1a;
+  --error-line: rgba(255, 138, 128, 0.16);
+
+  --shadow-pane: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --kbd-bg: #333333;
+
+  --control-hover: brightness(1.12);
+  --control-active: brightness(1.2);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+}
+
+/* —— 顶部栏 —— */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 20px;
+  background: var(--header-bg);
+  border-bottom: 1px solid var(--border);
+  box-shadow: var(--header-shadow);
+}
+
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+header h1 {
+  font-size: 18px;
+  margin: 0;
+  letter-spacing: 0.5px;
+  color: var(--brand-text);
+}
+
+.status-pill {
+  font-size: 12px;
+  color: var(--text-muted);
+  background: var(--surface-sunken);
+  padding: 4px 12px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.status-pill.err {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+
+/* —— 双栏主体 —— */
+main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 12px;
+  min-height: 0;
+}
+
+.pane {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  min-height: 0;
+  box-shadow: var(--shadow-pane);
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-soft);
+  background: var(--surface-raised);
+}
+
+.pane-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding-right: 4px;
+}
+
+.toolbar label {
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-control);
+}
+
+.toolbar select,
+.toolbar button {
+  font-size: 13px;
+  padding: 5px 10px;
+  border: 1px solid var(--border-control);
+  border-radius: 6px;
+  background: var(--surface);
+  cursor: pointer;
+  color: var(--text);
+  transition:
+    filter 0.12s ease,
+    background 0.12s ease;
+}
+
+.toolbar select:hover,
+.toolbar button:hover {
+  filter: var(--control-hover);
+}
+
+.toolbar button:active {
+  filter: var(--control-active);
+}
+
+.toolbar button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  filter: none;
+}
+
+.toolbar button.primary {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+.toolbar button.primary:hover {
+  background: var(--accent-hover);
+}
+
+.toolbar button.ghost {
+  background: transparent;
+  color: var(--text-control);
+  border: 1px solid var(--border-control);
+}
+
+.toolbar button.ghost:hover {
+  background: var(--surface-sunken);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.ctl-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.status.err {
+  color: var(--danger);
+  white-space: normal;
+  word-break: break-word;
+}
+
+/* 输入区错误行高亮（由 Monaco decoration 的 className 触发） */
+.fmt-error-line {
+  background: var(--error-line);
+}
+
+.fmt-error-glyph {
+  background: var(--danger);
+  width: 4px !important;
+  margin-left: 3px;
+}
+
+.line-info {
+  font-size: 12px;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.editor {
+  flex: 1;
+  min-height: 0;
+}
+
+/* —— 底部说明 —— */
+footer {
+  padding: 8px 20px;
+  font-size: 12px;
+  color: var(--text-dim);
+  background: var(--surface-raised);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+footer kbd {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  background: var(--kbd-bg);
+  border: 1px solid var(--border-control);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  padding: 1px 5px;
+  color: var(--text-control);
+}
+
+/* —— 响应式：窄屏纵向堆叠 —— */
+@media (max-width: 760px) {
+  main {
+    grid-template-columns: 1fr;
+  }
+
+  header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+}
